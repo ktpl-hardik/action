@@ -1,0 +1,72 @@
+name: M2 PROD Deployment
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  Maintenance :
+      runs-on: [self-hosted, linux, x64, Live]
+      steps:
+      - uses: actions/checkout@v2
+      - name: Enable Maintenance Mode
+        working-directory: /var/www/vhosts/hardik.krishtechnolabs.net/webroot
+        run: |
+          su live_hardik -c "php bin/magento maintenance:enable" 
+          
+  Clone:
+    needs: Maintenance
+    runs-on: [self-hosted, linux, x64, Live]
+    steps:    
+    - name: Pull the branch
+      working-directory: /var/www/vhosts/hardik.krishtechnolabs.net/webroot
+      run: |
+        su live_hardik -c "whoami"
+        su live_hardik -c "git pull origin upgraded_main"
+#        export HOME=/var/www/vhosts/bateel.com/webroot
+#        git config --global --add safe.directory /var/www/vhosts/bateel.com/webroot
+#        git status
+#        pwd
+      
+  Composer:
+      needs: Clone
+      runs-on: [self-hosted, linux, x64, Live]
+
+      steps:
+      - uses: actions/checkout@v2
+
+      - name: Check composer version
+        working-directory: /var/www/vhosts/hardik.krishtechnolabs.net/webroot  
+        run: |
+          su live_hardik -c "composer --version"
+#          su live_hardik -c "composer self-update 1.10.14"
+          
+      - name: Install Dependency with Composer
+        working-directory: /var/www/vhosts/hardik.krishtechnolabs.net/webroot
+        run: |
+          su live_hardik -c "composer install"
+          
+  App_Build:
+      needs: Composer
+      runs-on: [self-hosted, linux, x64, Live]
+    
+
+      steps:
+      - uses: actions/checkout@v2
+
+      - name: Magento Deploymnet
+        working-directory: /var/www/vhosts/hardik.krishtechnolabs.net/webroot
+        run: |
+          su live_hardik -c "php bin/magento setup:di:compile && php bin/magento setup:upgrade && php bin/magento setup:static-content:deploy -f && php bin/magento c:f"
+          
+  Activate_New_Build:
+      needs: App_Build
+      runs-on: [self-hosted, linux, x64, Live]
+
+      steps:
+      - uses: actions/checkout@v2
+
+      - name: Switch to New Build
+        working-directory: /var/www/vhosts/hardik.krishtechnolabs.net/webroot
+        run: |
+          su live_hardik -c "php bin/magento maintenance:disable"

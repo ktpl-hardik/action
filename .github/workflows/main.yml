@@ -22,7 +22,7 @@ jobs:
       working-directory: /var/www/vhosts/hardik.krishtechnolabs.net/webroot
       run: |
         su live_hardik -c "whoami"
-        su live_hardik -c "git pull origin upgraded_main"
+        su live_hardik -c "git pull origin main"
 #        export HOME=/var/www/vhosts/bateel.com/webroot
 #        git config --global --add safe.directory /var/www/vhosts/bateel.com/webroot
 #        git status
